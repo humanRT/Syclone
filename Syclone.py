@@ -23,7 +23,6 @@ excel_filepath = None
 
 write_in_progress = False
 completion_sound_played = False
-pending_ops = {}  # global
 measurement_queue = Queue() # global
 first_sample_received = False
 excel_alive = True
@@ -127,52 +126,52 @@ class ExcelEvents:
         addr = target.Address
         key = (sheet_name, addr)
 
-        # -----------------------------------------------------------
-        # 1) Is this a reply (Y/N) to a pending overwrite question?
-        # -----------------------------------------------------------
-        if key in pending_ops and text:
-            entry = pending_ops[key]
-            row   = entry["row"]
-            col   = entry["col"]
-            rows  = entry["rows"]
-            cols  = entry["cols"]
-            old_width = entry["old_width"]
+        # # -----------------------------------------------------------
+        # # 1) Is this a reply (Y/N) to a pending overwrite question?
+        # # -----------------------------------------------------------
+        # if key in pending_ops and text:
+        #     entry = pending_ops[key]
+        #     row   = entry["row"]
+        #     col   = entry["col"]
+        #     rows  = entry["rows"]
+        #     cols  = entry["cols"]
+        #     old_width = entry["old_width"]
 
-            # Restore original width
-            col_obj = sheet.Columns(col)
-            col_obj.ColumnWidth = old_width
+        #     # Restore original width
+        #     col_obj = sheet.Columns(col)
+        #     col_obj.ColumnWidth = old_width
 
-            # Remove pending state
-            del pending_ops[key]
+        #     # Remove pending state
+        #     del pending_ops[key]
 
-            reply = text.upper()
+        #     reply = text.upper()
 
-            if reply == "Y":
-                # Clear prompt cell formatting
-                target.Value = ""
-                target.Interior.ColorIndex = 0
-                target.Font.Bold = False
+        #     if reply == "Y":
+        #         # Clear prompt cell formatting
+        #         target.Value = ""
+        #         target.Interior.ColorIndex = 0
+        #         target.Font.Bold = False
 
-                # Overwrite and build grid
-                self.generate_grid(sheet, row, col, rows, cols, timestamp_mode)
+        #         # Overwrite and build grid
+        #         self.generate_grid(sheet, row, col, rows, cols, timestamp_mode)
 
-            elif reply == "N":
-                # User cancelled: just clear prompt cell
-                target.Value = ""
-                target.Interior.ColorIndex = 0
-                target.Font.Bold = False
+        #     elif reply == "N":
+        #         # User cancelled: just clear prompt cell
+        #         target.Value = ""
+        #         target.Interior.ColorIndex = 0
+        #         target.Font.Bold = False
 
-            else:
-                # Invalid answer, restore pending state
-                pending_ops[key] = {
-                    "row": row,
-                    "col": col,
-                    "rows": rows,
-                    "cols": cols,
-                    "old_width": old_width,
-                }
+        #     else:
+        #         # Invalid answer, restore pending state
+        #         pending_ops[key] = {
+        #             "row": row,
+        #             "col": col,
+        #             "rows": rows,
+        #             "cols": cols,
+        #             "old_width": old_width,
+        #         }
 
-            return
+        #     return
 
         # -----------------------------------------------------------
         # 2) Fresh command: parse "Syclone N" or "Syclone R x C"
@@ -202,68 +201,6 @@ class ExcelEvents:
         row = target.Row
         col = target.Column
 
-        # For a grid, each band is 3 rows tall: title / data / spacer
-        # We need to check all title + data cells that will be used.
-        conflict = False
-        for r in range(rows):
-            base_row  = row + r * 3
-            title_row = base_row
-            meas_row  = base_row + 1
-
-            for c in range(cols):
-                this_col = start_col = col + c
-                tcell = sheet.Cells(title_row, this_col)
-                dcell = sheet.Cells(meas_row,  this_col)
-
-                # Skip the command cell itself ("Syclone ..."),
-                # since we expect it to be non-empty and will overwrite it.
-                if title_row == row and this_col == col:
-                    pass
-                else:
-                    if tcell.Value not in ("", None) or dcell.Value not in ("", None):
-                        conflict = True
-                        break
-
-            if conflict:
-                break
-
-
-        if conflict:
-            # Save original width for *this* starting column only
-            col_obj = sheet.Columns(col)
-            old_width = col_obj.ColumnWidth
-
-            # Prompt text
-            prompt_text = "Existing data found. Type Y or N"
-            target.Value = prompt_text
-
-            # Autofit and pad width
-            col_obj.AutoFit()
-            col_obj.ColumnWidth = col_obj.ColumnWidth + 2
-
-            # Store pending operation
-            pending_ops[key] = {
-                "row": row,
-                "col": col,
-                "rows": rows,
-                "cols": cols,
-                "old_width": old_width,
-            }
-
-            # Highlight prompt cell
-            target.Font.Bold = True
-            target.HorizontalAlignment = -4108  # center
-            target.Interior.Color = 0x00CCFF    # attention
-            
-            # Force Excel to keep this cell selected
-            try:
-                sheet.Application.Goto(target)
-            except Exception:
-                pass
-    
-            return
-
-        # No conflict: clear command and build the grid
         target.Value = ""
         self.generate_grid(sheet, row, col, rows, cols, timestamp_mode)
 
