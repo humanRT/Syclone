@@ -1,0 +1,10 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Syclone.pyproj
+/Syclone.sln
+/secosmic_lo.wav
+/StarWars.wav
+/Syclone(DEMO).py
+/Syclone(DEMO).txt
