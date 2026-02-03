@@ -1,5 +1,6 @@
 ﻿import os
 import re
+import sys
 import time
 import threading
 import pythoncom
@@ -36,8 +37,13 @@ active_fill = {
     "next_index": 0
 }
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-WAV_PATH = os.path.join(HERE, "ready.wav")
+if getattr(sys, 'frozen', False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# HERE = os.path.dirname(os.path.abspath(__file__))
+WAV_PATH = os.path.join(BASE_DIR, "ready.wav")
 
 # For live plotting
 plot_x = deque(maxlen=500)   # time (s)
