@@ -218,27 +218,24 @@ class ExcelEvents:
     # -------------------------------------------------------------------
     def generate_grid(self, sheet, start_row, start_col, rows, cols, timestamp_mode=False):
         """
-        Builds a grid where:
-          - The command cell becomes a timestamp
-          - Samples are written horizontally on the SAME row
-          - NO titles
-          - NO borders
+        Builds a dense grid where:
+          - Each Syclone command consumes ONE row
+          - Timestamp + samples are on the same row
+          - No spacer rows
+          - No titles
+          - No borders
         """
         global active_fill, completion_sound_played
 
         completion_sound_played = False
-
         positions = []
 
         for r in range(rows):
-            base_row = start_row + r * 3
-            spacer_row = base_row + 1
+            row = start_row + r   # <-- DENSE rows, no gaps
 
-            # -------------------------------------------------
-            # Timestamp cell (command cell)
-            # -------------------------------------------------
+            # Timestamp cell
             if timestamp_mode:
-                ts_cell = sheet.Cells(base_row, start_col)
+                ts_cell = sheet.Cells(row, start_col)
                 ts_cell.Value = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 ts_cell.Font.Bold = True
                 ts_cell.HorizontalAlignment = -4108
@@ -246,31 +243,21 @@ class ExcelEvents:
             else:
                 col_offset = 0
 
-            # -------------------------------------------------
-            # Sample cells (same row as timestamp)
-            # -------------------------------------------------
+            # Sample cells
             for c in range(cols):
                 col = start_col + col_offset + c
-
-                dcell = sheet.Cells(base_row, col)
+                dcell = sheet.Cells(row, col)
                 dcell.Value = ""
                 dcell.HorizontalAlignment = -4108
-
-                positions.append((base_row, col))
-
-            # Spacer row
-            for c in range(cols + col_offset):
-                sheet.Cells(spacer_row, start_col + c).Clear()
-
-        print(f"[Excel] Prepared {len(positions)} sample cells at row {base_row}")
+                positions.append((row, col))
 
         active_fill = {
             "sheet": sheet,
             "positions": positions,
             "next_index": 0
         }
-        
-        # Force cursor to stay on timestamp cell
+
+        # Keep cursor on timestamp cell
         try:
             sheet.Application.Goto(sheet.Cells(start_row, start_col))
         except Exception:
